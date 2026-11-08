@@ -90,6 +90,14 @@ textarea{min-height:64px;resize:vertical}
 .view .bar button{flex:1;padding:12px;border-radius:12px;border:0;font-size:16px}
 .empty-note{text-align:center;color:var(--mute);padding:26px 10px}
 .back{background:none;border:0;color:var(--pri);font-size:16px;padding:0 0 10px;cursor:pointer}
+.d.pk{aspect-ratio:1/.8;display:flex;align-items:center;justify-content:center;font-size:15px}
+.d.pk.sel{background:var(--ok);color:#fff;border-color:var(--ok);font-weight:700}
+.d.pk.rng{background:#cfe9d9;border-color:#cfe9d9;color:#1f5a38}
+.d.pk.occ{background:#cfe0f5;border-color:#cfe0f5;color:#25508a}
+.d.pk.blk{background:#f6c9c4;border-color:#f6c9c4;color:#8f2f26}
+.d.pk.clash{outline:2px solid var(--red);outline-offset:-2px}
+.d.Bloquée{background:#c9564b;color:#fff;border-color:#c9564b}
+.alert{background:#f6dedb;border:1px solid #e7bcb7;color:#8f2f26;border-radius:10px;padding:8px 10px;margin-top:8px;font-size:14px}
 </style>
 </head>
 <body>
@@ -121,7 +129,7 @@ const inDays=s=>{const n=nights(today(),s);return n===0?"aujourd'hui":n===1?'dem
 
 /* ---------- données ---------- */
 const KEY='lr_data_v1';
-const fresh=()=>({bookings:[],inspections:{},items:[],lastExport:null});
+const fresh=()=>({bookings:[],blocks:[],inspections:{},items:[],lastExport:null});
 let D=(()=>{try{return Object.assign(fresh(),JSON.parse(localStorage.getItem(KEY))||{})}catch(e){return fresh()}})();
 function save(){try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){alert("Impossible d'enregistrer (stockage plein ?)")}}
 
@@ -143,12 +151,11 @@ let view='home',sub=null,bilanY=new Date().getFullYear();
 const nowD=new Date();
 let cal={y:nowD.getFullYear(),m:nowD.getMonth()};
 const flt={stays:'next',items:'todo'};
-const STATUS=['Confirmée','Demandée','Terminée','Annulée'];
+const STATUS=['Demandée','Confirmée','Terminée','Annulée'];
 const SOURCES=['Booking','Direct','Airbnb','Autre'];
 const KINDS=['Acheter','Changer','Réparer'];
 const URG=['Urgent','Normal','Plus tard'];
 const TITLES={home:'Loc. Ramplan',stays:'Séjours',cal:'Calendrier',insp:'États des lieux',items:'Matériel à prévoir'};
-const ROOMS=['Entrée','Cuisine / séjour','Chambre','Salle de bain','WC','Extérieur'];
 const opts=(a,s)=>a.map(x=>`<option${x===s?' selected':''}>${esc(x)}</option>`).join('');
 const active=()=>D.bookings.filter(b=>b.status!=='Annulée');
 const bk=id=>D.bookings.find(b=>b.id===id);
@@ -175,20 +182,17 @@ function monthBreakdown(y){
 }
 function vHome(){
   const t=today(),A=active();
-  const cur=A.find(b=>b.start<=t&&t<b.end);
   const next=A.filter(b=>b.start>t).sort((a,b)=>a.start.localeCompare(b.start))[0];
   let h='';
   if(needBackup())h+=`<div class="warn" data-act="settings">⚠️ Pense à faire une sauvegarde de tes données (touche ici)</div>`;
-  if(cur)h+=`<div class="hero"><small>En ce moment</small><b>${esc(cur.name)}</b><div>${plural(cur.guests,'personne','personnes')} · départ le ${fd(cur.end)} (${inDays(cur.end)})</div></div>`;
-  else h+=`<div class="hero free"><small>En ce moment</small><b>Appartement libre</b></div>`;
   if(next){
-    h+=`<div class="card tap" data-act="editb" data-id="${next.id}"><div class="between"><b>Prochaine arrivée</b><span class="badge ${next.status}">${next.status}</span></div>
-    <div style="font-size:18px;margin-top:4px">${esc(next.name)}</div>
-    <div class="mute">${fd(next.start)} → ${fd(next.end)} · ${plural(nights(next.start,next.end),'nuit','nuits')} · ${plural(next.guests,'personne','personnes')}</div>
-    <div class="mute">Arrive ${inDays(next.start)}</div></div>`;
+    h+=`<div class="hero" data-act="editb" data-id="${next.id}" style="cursor:pointer"><small>Prochain arrivant</small><b>${esc(next.name)}</b>
+    <div>${fd(next.start,1)} → ${fd(next.end,1)}</div>
+    <div>${plural(nights(next.start,next.end),'nuit','nuits')} · ${plural(next.guests,'personne','personnes')}</div>
+    <div style="margin-top:6px;font-weight:650">Arrive ${inDays(next.start)}${next.status!=='Confirmée'?' · '+next.status.toLowerCase():''}</div></div>`;
     if(nights(t,next.start)<=3&&photoCount(next.id,'before')===0)
       h+=`<div class="warn" data-act="openinsp" data-id="${next.id}">📷 Pense à l'état des lieux d'entrée pour ${esc(next.name)}</div>`;
-  }else h+=`<div class="card mute">Aucune arrivée prévue pour l'instant.</div>`;
+  }else h+=`<div class="hero free"><small>Prochain arrivant</small><b>Aucune arrivée prévue</b></div>`;
   const todo=D.items.filter(i=>!i.done),urg=todo.filter(i=>i.urgency==='Urgent');
   h+=`<div class="card tap" data-act="goto" data-v="items"><div class="between"><b>Matériel à prévoir</b><span class="mute">${todo.length} à faire</span></div>
     <div class="mute">${urg.length?urg.length+' urgent'+(urg.length>1?'s':'')+' · ':''}Total estimé ${eur(todo.reduce((s,i)=>s+(+i.price||0),0))}</div></div>`;
@@ -237,30 +241,36 @@ function vCal(){
   for(let d=1;d<=dim;d++){
     const ds=y+'-'+pad(m+1)+'-'+pad(d);
     const cov=A.find(b=>b.start<=ds&&ds<b.end),dep=!cov&&A.find(b=>b.end===ds);
-    const cls=['d',ds===t?'today':'',cov?cov.status:'',dep?'dep':''].join(' ');
+    const bl=D.blocks.find(x=>x.start<=ds&&ds<x.end);
+    const cls=['d',ds===t?'today':'',cov?cov.status:(bl?'Bloquée':''),dep&&!bl?'dep':''].join(' ');
     const lab=cov&&(cov.start===ds||d===1)?`<i>${esc(cov.name.split(' ')[0].slice(0,9))}</i>`:'';
     cells+=`<div class="${cls}" data-act="day" data-d="${ds}">${d}${lab}</div>`;
   }
   const mm=y+'-'+pad(m+1),inM=A.filter(b=>b.start.slice(0,7)<=mm&&b.end.slice(0,7)>=mm&&!(b.end.slice(0,7)===mm&&b.end.slice(8)==='01')).sort((a,b)=>a.start.localeCompare(b.start));
+  const blM=D.blocks.filter(x=>x.start.slice(0,7)<=mm&&x.end.slice(0,7)>=mm&&!(x.end.slice(0,7)===mm&&x.end.slice(8)==='01')).sort((a,b)=>a.start.localeCompare(b.start));
   return `<div class="calh"><button data-act="cm" data-d="-1">‹</button><b>${name}</b><button data-act="cm" data-d="1">›</button></div>
   <div class="grid">${cells}</div>
-  <div class="legend"><span><em style="background:var(--pri)"></em>Confirmée</span><span><em style="background:var(--warn)"></em>Demandée</span><span><em style="background:#9aa39e"></em>Terminée</span></div>
-  <h2>Ce mois-ci</h2>`+(inM.length?inM.map(stayCard).join(''):`<div class="empty-note">Rien ce mois-ci.</div>`);
+  <div class="legend"><span><em style="background:var(--pri)"></em>Confirmée</span><span><em style="background:var(--warn)"></em>Demandée</span><span><em style="background:#9aa39e"></em>Terminée</span><span><em style="background:#c9564b"></em>Bloqué</span></div>
+  <button class="btn" style="margin-top:0" data-act="newblock">🚫 Bloquer des dates</button>
+  <h2>Ce mois-ci</h2>`+(inM.length||blM.length?inM.map(stayCard).join('')+blM.map(x=>`<div class="card tap" data-act="editblock" data-id="${x.id}" style="border-color:#e7bcb7"><div class="between"><b>🚫 Bloqué${x.note?' · '+esc(x.note):''}</b></div><div class="mute">${fd(x.start,1)} → ${fd(x.end,1)}</div></div>`).join(''):`<div class="empty-note">Rien ce mois-ci.</div>`);
 }
 function vInsp(){
   if(sub){
     const b=bk(sub);if(!b){sub=null;return vInsp()}
-    const I=D.inspections[sub]||(D.inspections[sub]={rooms:ROOMS.map(n=>({id:uid(),name:n,note:'',before:[],after:[]}))});
+    const I=D.inspections[sub]||(D.inspections[sub]={rooms:[{id:uid(),name:'Photos 1',noteBefore:'',noteAfter:'',before:[],after:[]}]});
+    I.rooms.forEach(r=>{if(r.note&&r.noteBefore==null){r.noteBefore=r.note;delete r.note}if(r.noteBefore==null)r.noteBefore='';if(r.noteAfter==null)r.noteAfter=''});
     let h=`<button class="back" data-act="insback">‹ Tous les séjours</button>
     <div class="card"><b>${esc(b.name)}</b><div class="mute">${fd(b.start,1)} → ${fd(b.end,1)}</div></div>`;
     I.rooms.forEach(r=>{
-      const col=side=>`<div><h4>${side==='before'?'Avant (arrivée)':'Après (départ)'}</h4><div class="th">${r[side].map(p=>`<img data-pid="${p}" data-act="photo" data-r="${r.id}" data-s="${side}" alt="">`).join('')}<label class="add">＋<input type="file" accept="image/*" multiple data-add="${side}" data-r="${r.id}"></label></div></div>`;
+      const col=side=>`<div><h4>${side==='before'?'Avant (arrivée)':'Après (départ)'}</h4><div class="th">${r[side].map(p=>`<img data-pid="${p}" data-act="photo" data-r="${r.id}" data-s="${side}" alt="">`).join('')}<label class="add">＋<input type="file" accept="image/*" multiple data-add="${side}" data-r="${r.id}"></label></div>
+      <textarea data-note="${r.id}" data-side="${side}" placeholder="Note ${side==='before'?'avant':'après'}…">${esc(side==='before'?r.noteBefore:r.noteAfter)}</textarea></div>`;
       h+=`<div class="card room"><div class="rh"><b>${esc(r.name)}</b><button class="x" data-act="roomedit" data-r="${r.id}">⋯</button></div>
       <div class="cols">${col('before')}${col('after')}</div>
-      <textarea data-note="${r.id}" placeholder="Remarque (état, dégât, manque…)">${esc(r.note)}</textarea>
       <button class="btn sm" data-act="toitem" data-r="${r.id}">🧰 À acheter / changer</button></div>`;
     });
-    return h+`<button class="btn" data-act="roomadd">＋ Ajouter une pièce</button>`;
+    const last=I.rooms[I.rooms.length-1];
+    if(last&&(last.before.length||last.after.length))h+=`<button class="btn" data-act="roomadd">＋ Ajouter un autre état des lieux (n° ${I.rooms.length+1})</button>`;
+    return h;
   }
   const L=active().slice().sort((a,b)=>b.start.localeCompare(a.start));
   return L.length?`<p class="mute">Choisis un séjour pour prendre les photos d'arrivée et de départ, pièce par pièce.</p>`+L.map(b=>`<div class="card tap" data-act="openinsp" data-id="${b.id}"><div class="between"><b>${esc(b.name)}</b><span class="mute">${fd(b.start,1)}</span></div>
@@ -298,12 +308,43 @@ function sheet(title,html,mount){
   document.body.appendChild(s);document.body.classList.add('lock');
   if(mount)mount(s);hydratePhotos(s);
 }
+let PK=null;
+function renderPK(){
+  const el=$('#pk');if(!el||!PK)return;
+  const {y,m,ps,pe,phase,id,kind}=PK,first=new Date(y,m,1),off=(first.getDay()+6)%7,dim=new Date(y,m+1,0).getDate();
+  const name=first.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+  const bks=active().filter(b=>kind==='booking'?b.id!==id:true),blks=D.blocks.filter(x=>kind==='block'?x.id!==id:true);
+  let c='';['L','M','M','J','V','S','D'].forEach(x=>c+=`<div class="dow">${x}</div>`);
+  for(let i=0;i<off;i++)c+=`<div class="d empty"></div>`;
+  for(let d=1;d<=dim;d++){
+    const ds=y+'-'+pad(m+1)+'-'+pad(d);
+    const sel=ds===ps||ds===pe,rng=ps&&pe&&ds>ps&&ds<pe,occ=bks.some(b=>b.start<=ds&&ds<b.end),blk=blks.some(b=>b.start<=ds&&ds<b.end);
+    const cls=sel?' sel':rng?' rng':blk?' blk':occ?' occ':'';
+    c+=`<div class="d pk${cls}${(sel||rng)&&(occ||blk)?' clash':''}${ds===today()?' today':''}" data-act="pkd" data-d="${ds}">${d}</div>`;
+  }
+  const msg=phase==='end'?"👉 Touche maintenant la date de <b>départ</b>":(!ps||phase==='start')?"👉 Touche la date d'<b>arrivée</b>":'';
+  const sum=ps&&pe?`<b>${fd(ps,1)}</b> → <b>${fd(pe,1)}</b> · ${plural(nights(ps,pe),'nuit','nuits')}`:ps?`Arrivée : <b>${fd(ps,1)}</b>`:'';
+  const hitB=ps&&pe?bks.filter(b=>b.start<pe&&ps<b.end):(ps?bks.filter(b=>b.start<=ps&&ps<b.end):[]);
+  const hitK=ps&&pe?blks.filter(b=>b.start<pe&&ps<b.end):(ps?blks.filter(b=>b.start<=ps&&ps<b.end):[]);
+  const alertH=(hitB.length?`<div class="alert">⚠️ <b>Déjà occupé</b> : ${hitB.map(b=>esc(b.name)+' ('+fd(b.start)+' → '+fd(b.end)+')').join(', ')}</div>`:'')+
+    (hitK.length?`<div class="alert">🚫 <b>Dates bloquées</b> : ${hitK.map(b=>(b.note?esc(b.note)+' ':'')+'('+fd(b.start)+' → '+fd(b.end)+')').join(', ')}</div>`:'');
+  el.innerHTML=`<div class="calh"><button type="button" data-act="pkm" data-d="-1">‹</button><b>${name}</b><button type="button" data-act="pkm" data-d="1">›</button></div><div class="grid">${c}</div>
+  <div class="legend"><span><em style="background:var(--pri)"></em>${kind==='block'?'Dates à bloquer':'Séjour en cours'}</span><span><em style="background:#cfe0f5"></em>Déjà réservé</span><span><em style="background:#f6c9c4"></em>Bloqué</span></div>
+  <p class="hint">${msg||sum}</p>${msg&&sum?`<p class="mute" style="margin:2px 0 0">${sum}</p>`:''}${alertH}`;
+}
+function pickDay(ds){
+  if(!PK)return;
+  if(PK.phase==='end'&&PK.ps&&ds>PK.ps){PK.pe=ds;PK.phase='done'}
+  else{PK.ps=ds;PK.pe=null;PK.phase='end'}
+  renderPK();
+}
 function editBooking(id,pre){
-  const b=id?bk(id):Object.assign({name:'',start:today(),end:addDays(today(),3),guests:2,price:'',deposit:'',source:'Booking',status:'Confirmée',phone:'',note:''},pre||{});
+  const b=id?bk(id):Object.assign({name:'',start:'',end:'',guests:2,price:'',deposit:'',source:'Booking',status:'Demandée',phone:'',note:''},pre||{});
+  const bd=dt(b.start||today());
+  PK={id,kind:'booking',ps:b.start||null,pe:b.end||null,phase:(b.start&&b.end)?'done':(b.start?'end':'start'),y:bd.getFullYear(),m:bd.getMonth()};
   sheet(id?'Modifier le séjour':'Nouveau séjour',`<form id="f">
+  <div id="pk" style="margin-top:10px"></div>
   <label>Nom du voyageur<input name="name" required value="${esc(b.name)}"></label>
-  <div class="row"><label>Arrivée<input type="date" name="start" required value="${b.start}"></label><label>Départ<input type="date" name="end" required value="${b.end}"></label></div>
-  <p class="hint" id="nn"></p>
   <div class="row"><label>Personnes<input type="number" inputmode="numeric" min="1" name="guests" value="${esc(b.guests)}"></label><label>Prix total (€)<input type="number" inputmode="decimal" step="0.01" name="price" value="${esc(b.price)}"></label></div>
   <div class="row"><label>Acompte reçu (€)<input type="number" inputmode="decimal" step="0.01" name="deposit" value="${esc(b.deposit)}"></label><label>Provenance<select name="source">${opts(SOURCES,b.source)}</select></label></div>
   <label>Statut<select name="status">${opts(STATUS,b.status)}</select></label>
@@ -311,17 +352,40 @@ function editBooking(id,pre){
   <label>Note<textarea name="note">${esc(b.note)}</textarea></label>
   <button class="btn primary" type="submit">Enregistrer</button>
   ${id?`<button type="button" class="btn" data-act="openinsp" data-id="${id}">📷 État des lieux</button><button type="button" class="btn danger" data-act="delb" data-id="${id}">Supprimer ce séjour</button>`:''}</form>`,s=>{
-    const f=s.querySelector('#f'),upd=()=>{const n=nights(f.start.value,f.end.value);s.querySelector('#nn').textContent=f.end.value>f.start.value?plural(n,'nuit','nuits')+(f.price.value?' · '+eur(f.price.value/n)+' / nuit':''):''};
-    f.addEventListener('input',upd);upd();
-    f.addEventListener('submit',e=>{
-      e.preventDefault();const v=Object.fromEntries(new FormData(f));
-      if(v.end<=v.start){alert("Le départ doit être après l'arrivée.");return}
+    renderPK();
+    s.querySelector('#f').addEventListener('submit',e=>{
+      e.preventDefault();const v=Object.fromEntries(new FormData(e.target));
+      if(!PK.ps||!PK.pe){alert("Choisis la date d'arrivée puis la date de départ dans le calendrier.");return}
+      v.start=PK.ps;v.end=PK.pe;
       if(v.status!=='Annulée'){
         const c=D.bookings.find(x=>x.id!==id&&x.status!=='Annulée'&&x.start<v.end&&v.start<x.end);
-        if(c&&!confirm('Ces dates chevauchent le séjour de '+c.name+' ('+fd(c.start)+' → '+fd(c.end)+'). Enregistrer quand même ?'))return;
+        if(c&&!confirm('⚠️ Attention : ces dates sont déjà occupées par '+c.name+' ('+fd(c.start)+' → '+fd(c.end)+'). Enregistrer quand même ?'))return;
       }
+      const kb=D.blocks.find(x=>x.start<v.end&&v.start<x.end);
+      if(v.status!=='Annulée'&&kb&&!confirm('🚫 Ces dates sont bloquées'+(kb.note?' ('+kb.note+')':'')+'. Enregistrer quand même ?'))return;
       v.guests=+v.guests||1;
       if(id)Object.assign(b,v);else D.bookings.push(Object.assign({id:uid()},v));
+      save();closeSheet();render(true);
+    });
+  });
+}
+function editBlock(id,pre){
+  const x=id?D.blocks.find(b=>b.id===id):Object.assign({start:'',end:'',note:''},pre||{});
+  const bd=dt(x.start||today());
+  PK={id,kind:'block',ps:x.start||null,pe:x.end||null,phase:(x.start&&x.end)?'done':(x.start?'end':'start'),y:bd.getFullYear(),m:bd.getMonth()};
+  sheet(id?'Dates bloquées':'Bloquer des dates',`<form id="f"><p class="mute" style="margin-bottom:0">Choisis les dates où l'appartement ne sera pas loué (famille, travaux…).</p>
+  <div id="pk" style="margin-top:6px"></div>
+  <label>Raison (facultatif)<input name="note" value="${esc(x.note)}" placeholder="ex. travaux, famille"></label>
+  <button class="btn primary" type="submit">Enregistrer</button>
+  ${id?`<button type="button" class="btn danger" data-act="delblock" data-id="${id}">Débloquer ces dates</button>`:''}</form>`,s=>{
+    renderPK();
+    s.querySelector('#f').addEventListener('submit',e=>{
+      e.preventDefault();const v=Object.fromEntries(new FormData(e.target));
+      if(!PK.ps||!PK.pe){alert("Choisis la première puis la dernière date dans le calendrier.");return}
+      const c=active().find(b=>b.start<PK.pe&&PK.ps<b.end);
+      if(c&&!confirm('⚠️ Un séjour existe déjà sur ces dates : '+c.name+' ('+fd(c.start)+' → '+fd(c.end)+'). Bloquer quand même ?'))return;
+      const rec={start:PK.ps,end:PK.pe,note:(v.note||'').trim()};
+      if(id)Object.assign(x,rec);else D.blocks.push(Object.assign({id:uid()},rec));
       save();closeSheet();render(true);
     });
   });
@@ -344,7 +408,7 @@ function editItem(id,pre){
 }
 function roomOf(rid){const I=D.inspections[sub];return I&&I.rooms.find(r=>r.id===rid)}
 function settings(){
-  const hasDemo=D.bookings.some(b=>b.demo)||D.items.some(i=>i.demo);
+  const hasDemo=D.bookings.some(b=>b.demo)||D.items.some(i=>i.demo)||D.blocks.some(x=>x.demo);
   sheet('Réglages',`<p class="mute">Les données restent sur ce téléphone. Fais une sauvegarde de temps en temps : tu peux l'enregistrer dans Drive, par mail ou dans Fichiers.</p>
   <button class="btn primary" data-act="export">💾 Sauvegarder mes données</button>
   <p class="mute">${D.lastExport?'Dernière sauvegarde : '+fd(D.lastExport,1):'Jamais sauvegardé.'}</p>
@@ -358,11 +422,12 @@ function loadDemo(){
   undemo();const t=today(),mk=(o,s,e,n,g,p,src,st)=>({id:uid(),demo:true,name:n,start:addDays(t,s),end:addDays(t,e),guests:g,price:p,deposit:Math.round(p*.3),source:src,status:st,phone:'',note:''});
   D.bookings.push(mk(0,-60,-54,'Famille Martin',4,720,'Booking','Terminée'),mk(0,-30,-25,'Julie et Antoine',2,540,'Booking','Terminée'),mk(0,-2,3,'M. Dubois',3,610,'Direct','Confirmée'),mk(0,12,19,'Famille Lopez',5,980,'Booking','Confirmée'),mk(0,34,38,'Sophie',2,400,'Booking','Demandée'));
   D.items.push({id:uid(),demo:true,name:'Rideaux de la chambre',kind:'Changer',urgency:'Urgent',price:80,note:'Troués côté fenêtre',done:false},{id:uid(),demo:true,name:'Grille-pain',kind:'Acheter',urgency:'Normal',price:25,note:'',done:false},{id:uid(),demo:true,name:'Joint de la douche',kind:'Réparer',urgency:'Plus tard',price:10,note:'',done:false});
+  D.blocks.push({id:uid(),demo:true,start:addDays(t,24),end:addDays(t,27),note:'Réservé famille'});
   save();
 }
 function undemo(){
   D.bookings.filter(b=>b.demo).forEach(b=>delete D.inspections[b.id]);
-  D.bookings=D.bookings.filter(b=>!b.demo);D.items=D.items.filter(i=>!i.demo);save();
+  D.bookings=D.bookings.filter(b=>!b.demo);D.items=D.items.filter(i=>!i.demo);D.blocks=D.blocks.filter(x=>!x.demo);save();
 }
 async function exportData(){
   const photos={};for(const k of await pKeys())photos[k]=await pGet(k);
@@ -400,20 +465,27 @@ document.addEventListener('click',async e=>{
     case 'by':bilanY+=+a.dataset.d;render(true);break;
     case 'cm':cal.m+=+a.dataset.d;if(cal.m<0){cal.m=11;cal.y--}if(cal.m>11){cal.m=0;cal.y++}render();break;
     case 'day':{
-      const ds=a.dataset.d,L=active().filter(b=>(b.start<=ds&&ds<b.end)||b.end===ds||b.start===ds);
-      if(!L.length){editBooking(null,{start:ds,end:addDays(ds,3)});break}
-      sheet(fd(ds,1),L.map(b=>`<div class="card tap" data-act="editb" data-id="${b.id}"><b>${esc(b.name)}</b><div class="mute">${fd(b.start)} → ${fd(b.end)} · ${b.start===ds?'arrivée':b.end===ds?'départ':'sur place'}</div></div>`).join('')+`<button class="btn primary" data-act="newbat" data-d="${ds}">＋ Nouveau séjour à partir d'ici</button>`);
+      const ds=a.dataset.d,L=active().filter(b=>(b.start<=ds&&ds<b.end)||b.end===ds||b.start===ds),K=D.blocks.filter(x=>x.start<=ds&&ds<x.end);
+      if(!L.length&&!K.length){editBooking(null,{start:ds});break}
+      sheet(fd(ds,1),L.map(b=>`<div class="card tap" data-act="editb" data-id="${b.id}"><b>${esc(b.name)}</b><div class="mute">${fd(b.start)} → ${fd(b.end)} · ${b.start===ds?'arrivée':b.end===ds?'départ':'sur place'}</div></div>`).join('')+
+        K.map(x=>`<div class="card tap" data-act="editblock" data-id="${x.id}" style="border-color:#e7bcb7"><b>🚫 Bloqué${x.note?' · '+esc(x.note):''}</b><div class="mute">${fd(x.start)} → ${fd(x.end)}</div></div>`).join('')+
+        `<button class="btn primary" data-act="newbat" data-d="${ds}">＋ Nouveau séjour à partir d'ici</button>`);
       break}
-    case 'newbat':editBooking(null,{start:a.dataset.d,end:addDays(a.dataset.d,3)});break;
+    case 'newblock':editBlock();break;
+    case 'editblock':editBlock(id);break;
+    case 'delblock':if(confirm('Débloquer ces dates ?')){D.blocks=D.blocks.filter(x=>x.id!==id);save();closeSheet();render(true)}break;
+    case 'newbat':editBooking(null,{start:a.dataset.d});break;
+    case 'pkd':pickDay(a.dataset.d);break;
+    case 'pkm':PK.m+=+a.dataset.d;if(PK.m<0){PK.m=11;PK.y--}if(PK.m>11){PK.m=0;PK.y++}renderPK();break;
     case 'openinsp':closeSheet();view='insp';sub=id;render();break;
     case 'insback':sub=null;render();break;
-    case 'roomadd':{const n=prompt('Nom de la pièce ?');if(n&&n.trim()){D.inspections[sub].rooms.push({id:uid(),name:n.trim(),note:'',before:[],after:[]});save();render(true)}break}
+    case 'roomadd':{const I=D.inspections[sub];I.rooms.push({id:uid(),name:'Photos '+(I.rooms.length+1),noteBefore:'',noteAfter:'',before:[],after:[]});save();render(true);break}
     case 'roomedit':{
       const r=roomOf(a.dataset.r);if(!r)break;
-      sheet(r.name,`<button class="btn" data-act="roomren" data-r="${r.id}">✏️ Renommer</button><button class="btn danger" data-act="roomdel" data-r="${r.id}">Supprimer cette pièce</button>`);break}
+      sheet(r.name,`<button class="btn" data-act="roomren" data-r="${r.id}">✏️ Renommer</button><button class="btn danger" data-act="roomdel" data-r="${r.id}">Supprimer cet état des lieux</button>`);break}
     case 'roomren':{const r=roomOf(a.dataset.r),n=prompt('Nouveau nom ?',r.name);if(n&&n.trim()){r.name=n.trim();save();closeSheet();render(true)}break}
     case 'roomdel':{const r=roomOf(a.dataset.r);if(confirm('Supprimer « '+r.name+' » et ses photos ?')){for(const p of r.before.concat(r.after))await pDel(p);const I=D.inspections[sub];I.rooms=I.rooms.filter(x=>x!==r);save();closeSheet();render(true)}break}
-    case 'toitem':{const r=roomOf(a.dataset.r),b=bk(sub);editItem(null,{note:'Pièce : '+r.name+(r.note?' — '+r.note:'')+' ('+b.name+')',from:sub});break}
+    case 'toitem':{const r=roomOf(a.dataset.r),b=bk(sub);const nt=[r.noteBefore,r.noteAfter].filter(Boolean).join(' / ');editItem(null,{note:b.name+(nt?' — '+nt:''),from:sub});break}
     case 'photo':{
       const v=document.createElement('div');v.className='view';
       v.innerHTML=`<img data-pid="${a.dataset.pid||a.getAttribute('data-pid')}" alt=""><div class="bar"><button data-act="vdel" data-pid="${a.getAttribute('data-pid')}" data-r="${a.dataset.r}" data-s="${a.dataset.s}" style="background:#b4443a;color:#fff">Supprimer</button><button data-act="vclose">Fermer</button></div>`;
@@ -438,7 +510,7 @@ document.addEventListener('change',async e=>{
     const r=roomOf(t.dataset.r);if(!r)return;
     for(const f of t.files){try{const data=await compress(f),pid=uid();await pPut(pid,data);r[t.dataset.add].push(pid)}catch(err){alert("Photo non lisible.")}}
     save();render(true);
-  }else if(t.dataset.note){const r=roomOf(t.dataset.note);if(r){r.note=t.value;save()}}
+  }else if(t.dataset.note){const r=roomOf(t.dataset.note);if(r){r[t.dataset.side==='before'?'noteBefore':'noteAfter']=t.value;save()}}
   else if('import' in t.dataset&&t.files[0])importData(t.files[0]);
 });
 
