@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Loc. Ramplan</title>
+<meta name="theme-color" content="#2f5d50">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Loc. Ramplan">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+:root{--bg:#f6f3ee;--ink:#26302c;--mute:#6b7670;--pri:#2f5d50;--pri2:#e3ede9;--acc:#c8793a;--card:#fff;--line:#e4dfd6;--red:#b4443a;--ok:#2f7d4f;--warn:#c8793a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body.lock{overflow:hidden}
+header{position:sticky;top:0;z-index:5;background:var(--pri);color:#fff;display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 14px 10px}
+header h1{font-size:19px;margin:0;flex:1;font-weight:650}
+header button{background:none;border:0;color:#fff;font-size:22px;padding:4px 8px;cursor:pointer}
+main{padding:14px 14px calc(86px + env(safe-area-inset-bottom));max-width:640px;margin:0 auto}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:5;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border:0;padding:8px 2px 7px;font-size:11px;color:var(--mute);display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+nav button span{font-size:22px;line-height:1}
+nav button.on{color:var(--pri);font-weight:650}
+h2{font-size:15px;margin:22px 0 8px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}
+h4{margin:0 0 6px;font-size:13px;color:var(--mute)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+.card.tap{cursor:pointer}
+.hero{background:var(--pri);color:#fff;border-radius:16px;padding:16px;margin-bottom:10px}
+.hero small{opacity:.8;display:block;margin-bottom:2px}
+.hero b{font-size:20px}
+.hero.free{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
+.between{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.mute{color:var(--mute);font-size:14px}
+.badge{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;background:var(--pri2);color:var(--pri);white-space:nowrap}
+.badge.Demandée{background:#fbeede;color:#9a5a1d}.badge.Terminée{background:#eceae5;color:#6b6b63}.badge.Annulée{background:#f6dedb;color:var(--red)}
+.badge.Urgent{background:#f6dedb;color:var(--red)}.badge.Normal{background:#fbeede;color:#9a5a1d}
+.warn{background:#fbeede;border:1px solid #efcfa4;color:#7a470f;border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:14px;cursor:pointer}
+.chips{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto}
+.chips button{border:1px solid var(--line);background:#fff;border-radius:99px;padding:6px 14px;font-size:14px;color:var(--ink);white-space:nowrap;cursor:pointer}
+.chips button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.fab{position:fixed;right:16px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:6;background:var(--acc);color:#fff;border:0;border-radius:99px;padding:13px 20px;font-size:16px;font-weight:650;box-shadow:0 4px 14px rgba(0,0,0,.22);cursor:pointer}
+.btn{display:block;width:100%;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:12px;padding:12px;font-size:16px;margin-top:10px;cursor:pointer}
+.btn.primary{background:var(--pri);color:#fff;border-color:var(--pri);font-weight:650}
+.btn.danger{color:var(--red);border-color:#e7bcb7}
+.btn.sm{display:inline-block;width:auto;padding:6px 12px;font-size:14px;margin:6px 6px 0 0}
+label{display:block;font-size:13px;color:var(--mute);margin-top:10px}
+input,select,textarea{display:block;width:100%;margin-top:4px;padding:10px;border:1px solid var(--line);border-radius:10px;font:inherit;color:var(--ink);background:#fff}
+textarea{min-height:64px;resize:vertical}
+.hint{font-size:13px;color:var(--pri);margin:6px 0 0}
+.ov{position:fixed;inset:0;background:rgba(20,28,24,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sh{background:var(--bg);width:100%;max-width:640px;max-height:92vh;border-radius:18px 18px 0 0;display:flex;flex-direction:column}
+.shh{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);font-size:17px}
+.shb{overflow:auto;padding:4px 16px calc(20px + env(safe-area-inset-bottom))}
+.x{background:none;border:0;font-size:20px;color:var(--mute);cursor:pointer;padding:2px 8px}
+.stat{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat .card{margin:0}.stat b{display:block;font-size:20px}.stat span{font-size:13px;color:var(--mute)}
+.bars{display:flex;align-items:flex-end;gap:4px;height:90px;margin-top:6px}
+.bars div{flex:1;background:var(--pri);border-radius:4px 4px 0 0;min-height:2px;opacity:.85}
+.bl{display:flex;gap:4px;font-size:10px;color:var(--mute)}.bl span{flex:1;text-align:center}
+.calh{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.calh b{font-size:18px;text-transform:capitalize}.calh button{background:#fff;border:1px solid var(--line);border-radius:10px;font-size:20px;padding:4px 14px;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.dow{font-size:12px;color:var(--mute);text-align:center;padding:2px 0}
+.d{aspect-ratio:1/1.05;background:#fff;border:1px solid var(--line);border-radius:8px;padding:3px;font-size:13px;position:relative;overflow:hidden;cursor:pointer}
+.d.empty{background:none;border:0;cursor:default}
+.d.today{outline:2px solid var(--acc)}
+.d i{display:block;font-style:normal;font-size:9.5px;line-height:1.05;margin-top:2px;font-weight:650;overflow:hidden}
+.d.Confirmée{background:var(--pri);color:#fff;border-color:var(--pri)}
+.d.Demandée{background:var(--warn);color:#fff;border-color:var(--warn)}
+.d.Terminée{background:#9aa39e;color:#fff;border-color:#9aa39e}
+.d.dep{background:linear-gradient(135deg,var(--pri) 50%,#fff 50%)}
+.legend{display:flex;gap:12px;font-size:12px;color:var(--mute);margin:10px 0;flex-wrap:wrap}
+.legend em{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.room .rh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.th{display:flex;flex-wrap:wrap;gap:6px}
+.th img,.add{width:calc(50% - 3px);aspect-ratio:1;object-fit:cover;border-radius:8px;background:#eceae5}
+.add{display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--pri);border:2px dashed #b9c9c2;background:var(--pri2);cursor:pointer}
+.add input{display:none}
+.item{display:flex;gap:12px;align-items:flex-start}
+.item .ck{width:26px;height:26px;border:2px solid var(--pri);border-radius:8px;background:#fff;flex:none;margin-top:2px;cursor:pointer;color:#fff;font-size:16px;line-height:1}
+.item.done .ck{background:var(--pri)}.item.done .nm{text-decoration:line-through;color:var(--mute)}
+.view{position:fixed;inset:0;background:#000;z-index:30;display:flex;flex-direction:column}
+.view img{flex:1;min-height:0;object-fit:contain;width:100%}
+.view .bar{display:flex;gap:10px;padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+.view .bar button{flex:1;padding:12px;border-radius:12px;border:0;font-size:16px}
+.empty-note{text-align:center;color:var(--mute);padding:26px 10px}
+.back{background:none;border:0;color:var(--pri);font-size:16px;padding:0 0 10px;cursor:pointer}
+</style>
+</head>
+<body>
+<header><h1 id="title">Loc. Ramplan</h1><button data-act="settings" aria-label="Réglages">⚙️</button></header>
+<main id="view"></main>
+<nav>
+  <button data-v="home"><span>🏠</span>Accueil</button>
+  <button data-v="stays"><span>📖</span>Séjours</button>
+  <button data-v="cal"><span>📅</span>Calendrier</button>
+  <button data-v="insp"><span>📷</span>États</button>
+  <button data-v="items"><span>🧰</span>Matériel</button>
+</nav>
+<script>
+"use strict";
+/* ---------- utilitaires ---------- */
+const $=s=>document.querySelector(s);
+const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today=()=>iso(new Date());
+const dt=s=>new Date(s+'T12:00:00');
+const addDays=(s,n)=>{const d=dt(s);d.setDate(d.getDate()+n);return iso(d)};
+const nights=(a,b)=>Math.max(0,Math.round((dt(b)-dt(a))/864e5));
+const fd=(s,y)=>s?dt(s).toLocaleDateString('fr-FR',y?{day:'numeric',month:'short',year:'numeric'}:{day:'numeric',month:'short'}):'';
+const eur=n=>(Math.round((+n||0)*100)/100).toLocaleString('fr-FR',{maximumFractionDigits:2})+' €';
+const plural=(n,a,b)=>n+' '+(n>1?b:a);
+const inDays=s=>{const n=nights(today(),s);return n===0?"aujourd'hui":n===1?'demain':'dans '+n+' jours'};
+
+/* ---------- données ---------- */
+const KEY='lr_data_v1';
+const fresh=()=>({bookings:[],inspections:{},items:[],lastExport:null});
+let D=(()=>{try{return Object.assign(fresh(),JSON.parse(localStorage.getItem(KEY))||{})}catch(e){return fresh()}})();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){alert("Impossible d'enregistrer (stockage plein ?)")}}
+
+/* photos : IndexedDB */
+let db;
+const openDB=()=>new Promise((res,rej)=>{const r=indexedDB.open('lr_photos',1);r.onupgradeneeded=()=>r.result.createObjectStore('p');r.onsuccess=()=>{db=r.result;res()};r.onerror=()=>rej(r.error)});
+const pPut=(k,v)=>new Promise((res,rej)=>{const t=db.transaction('p','readwrite');t.objectStore('p').put(v,k);t.oncomplete=res;t.onerror=()=>rej(t.error)});
+const pGet=k=>new Promise(res=>{const q=db.transaction('p').objectStore('p').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>res(null)});
+const pDel=k=>new Promise(res=>{const t=db.transaction('p','readwrite');t.objectStore('p').delete(k);t.oncomplete=res;t.onerror=res});
+const pKeys=()=>new Promise(res=>{const q=db.transaction('p').objectStore('p').getAllKeys();q.onsuccess=()=>res(q.result);q.onerror=()=>res([])});
+const pClear=()=>new Promise(res=>{const t=db.transaction('p','readwrite');t.objectStore('p').clear();t.oncomplete=res;t.onerror=res});
+function compress(file){return new Promise((res,rej)=>{const img=new Image(),u=URL.createObjectURL(file);img.onload=()=>{const k=Math.min(1,1200/Math.max(img.width,img.height));const w=Math.round(img.width*k),h=Math.round(img.height*k);const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',.72))};img.onerror=rej;img.src=u})}
+async function hydratePhotos(root){
+  for(const im of (root||document).querySelectorAll('img[data-pid]:not([src])')){const v=await pGet(im.dataset.pid);if(v)im.src=v}
+}
+
+/* ---------- état de l'interface ---------- */
+let view='home',sub=null,bilanY=new Date().getFullYear();
+const nowD=new Date();
+let cal={y:nowD.getFullYear(),m:nowD.getMonth()};
+const flt={stays:'next',items:'todo'};
+const STATUS=['Confirmée','Demandée','Terminée','Annulée'];
+const SOURCES=['Booking','Direct','Airbnb','Autre'];
+const KINDS=['Acheter','Changer','Réparer'];
+const URG=['Urgent','Normal','Plus tard'];
+const TITLES={home:'Loc. Ramplan',stays:'Séjours',cal:'Calendrier',insp:'États des lieux',items:'Matériel à prévoir'};
+const ROOMS=['Entrée','Cuisine / séjour','Chambre','Salle de bain','WC','Extérieur'];
+const opts=(a,s)=>a.map(x=>`<option${x===s?' selected':''}>${esc(x)}</option>`).join('');
+const active=()=>D.bookings.filter(b=>b.status!=='Annulée');
+const bk=id=>D.bookings.find(b=>b.id===id);
+const photoCount=(bid,side)=>((D.inspections[bid]||{rooms:[]}).rooms).reduce((n,r)=>n+r[side].length,0);
+
+/* ---------- vues ---------- */
+function needBackup(){
+  const real=D.bookings.some(b=>!b.demo);
+  return real&&(!D.lastExport||nights(D.lastExport,today())>30);
+}
+function monthBreakdown(y){
+  const out=[];
+  for(let m=0;m<12;m++){
+    const from=y+'-'+pad(m+1)+'-01',to=m===11?(y+1)+'-01-01':y+'-'+pad(m+2)+'-01';
+    let n=0,rev=0;
+    D.bookings.filter(b=>b.status==='Confirmée'||b.status==='Terminée').forEach(b=>{
+      const tot=nights(b.start,b.end);if(!tot)return;
+      const s=b.start>from?b.start:from,e=b.end<to?b.end:to;
+      const k=Math.max(0,nights(s,e));n+=k;rev+=(+b.price||0)*k/tot;
+    });
+    out.push({n,rev});
+  }
+  return out;
+}
+function vHome(){
+  const t=today(),A=active();
+  const cur=A.find(b=>b.start<=t&&t<b.end);
+  const next=A.filter(b=>b.start>t).sort((a,b)=>a.start.localeCompare(b.start))[0];
+  let h='';
+  if(needBackup())h+=`<div class="warn" data-act="settings">⚠️ Pense à faire une sauvegarde de tes données (touche ici)</div>`;
+  if(cur)h+=`<div class="hero"><small>En ce moment</small><b>${esc(cur.name)}</b><div>${plural(cur.guests,'personne','personnes')} · départ le ${fd(cur.end)} (${inDays(cur.end)})</div></div>`;
+  else h+=`<div class="hero free"><small>En ce moment</small><b>Appartement libre</b></div>`;
+  if(next){
+    h+=`<div class="card tap" data-act="editb" data-id="${next.id}"><div class="between"><b>Prochaine arrivée</b><span class="badge ${next.status}">${next.status}</span></div>
+    <div style="font-size:18px;margin-top:4px">${esc(next.name)}</div>
+    <div class="mute">${fd(next.start)} → ${fd(next.end)} · ${plural(nights(next.start,next.end),'nuit','nuits')} · ${plural(next.guests,'personne','personnes')}</div>
+    <div class="mute">Arrive ${inDays(next.start)}</div></div>`;
+    if(nights(t,next.start)<=3&&photoCount(next.id,'before')===0)
+      h+=`<div class="warn" data-act="openinsp" data-id="${next.id}">📷 Pense à l'état des lieux d'entrée pour ${esc(next.name)}</div>`;
+  }else h+=`<div class="card mute">Aucune arrivée prévue pour l'instant.</div>`;
+  const todo=D.items.filter(i=>!i.done),urg=todo.filter(i=>i.urgency==='Urgent');
+  h+=`<div class="card tap" data-act="goto" data-v="items"><div class="between"><b>Matériel à prévoir</b><span class="mute">${todo.length} à faire</span></div>
+    <div class="mute">${urg.length?urg.length+' urgent'+(urg.length>1?'s':'')+' · ':''}Total estimé ${eur(todo.reduce((s,i)=>s+(+i.price||0),0))}</div></div>`;
+  h+=`<button class="btn primary" data-act="newb">＋ Nouveau séjour</button>`;
+  const M=monthBreakdown(bilanY),rev=M.reduce((s,x)=>s+x.rev,0),nn=M.reduce((s,x)=>s+x.n,0);
+  const yb=D.bookings.filter(b=>(b.status==='Confirmée'||b.status==='Terminée')&&b.start.slice(0,4)==String(bilanY));
+  const days=(bilanY%4===0&&(bilanY%100!==0||bilanY%400===0))?366:365;
+  const max=Math.max(1,...M.map(x=>x.rev));
+  h+=`<h2>Bilan</h2><div class="calh"><button data-act="by" data-d="-1">‹</button><b>${bilanY}</b><button data-act="by" data-d="1">›</button></div>
+  <div class="stat">
+    <div class="card"><b>${eur(rev)}</b><span>Revenus</span></div>
+    <div class="card"><b>${nn}</b><span>Nuits louées</span></div>
+    <div class="card"><b>${Math.round(nn/days*100)} %</b><span>Taux d'occupation</span></div>
+    <div class="card"><b>${nn?eur(rev/nn):'—'}</b><span>Prix moyen / nuit</span></div>
+    <div class="card"><b>${yb.length?(yb.reduce((s,b)=>s+nights(b.start,b.end),0)/yb.length).toFixed(1).replace('.',','):'—'}</b><span>Durée moyenne (nuits)</span></div>
+    <div class="card"><b>${yb.length?(yb.reduce((s,b)=>s+(+b.guests||0),0)/yb.length).toFixed(1).replace('.',','):'—'}</b><span>Personnes par séjour</span></div>
+  </div>
+  <div class="card" style="margin-top:10px"><span class="mute">Revenus par mois</span>
+    <div class="bars">${M.map(x=>`<div style="height:${Math.round(x.rev/max*100)}%" title="${eur(x.rev)}"></div>`).join('')}</div>
+    <div class="bl">${'JFMAMJJASOND'.split('').map(l=>`<span>${l}</span>`).join('')}</div></div>`;
+  return h;
+}
+function stayCard(b){
+  const n=nights(b.start,b.end);
+  return `<div class="card tap" data-act="editb" data-id="${b.id}">
+  <div class="between"><b>${esc(b.name)}</b><span class="badge ${b.status}">${b.status}</span></div>
+  <div class="mute">${fd(b.start,1)} → ${fd(b.end,1)} · ${plural(n,'nuit','nuits')} · ${plural(b.guests,'pers.','pers.')}</div>
+  <div class="between"><span>${eur(b.price)}${n&&b.price?` <span class="mute">(${eur(b.price/n)}/nuit)</span>`:''}</span><span class="mute">${esc(b.source)}${b.demo?' · exemple':''}</span></div></div>`;
+}
+function vStays(){
+  const t=today();
+  let L=D.bookings.slice();
+  if(flt.stays==='next')L=L.filter(b=>b.end>=t&&b.status!=='Annulée').sort((a,b)=>a.start.localeCompare(b.start));
+  else if(flt.stays==='past')L=L.filter(b=>b.end<t).sort((a,b)=>b.start.localeCompare(a.start));
+  else L.sort((a,b)=>b.start.localeCompare(a.start));
+  const chips=[['next','À venir'],['past','Passés'],['all','Tous']].map(([k,l])=>`<button class="${flt.stays===k?'on':''}" data-act="fs" data-k="${k}">${l}</button>`).join('');
+  return `<div class="chips">${chips}</div>`+(L.length?L.map(stayCard).join(''):`<div class="empty-note">Aucun séjour ici.<br>Touche « ＋ Séjour » pour en ajouter un.</div>`)+`<button class="fab" data-act="newb">＋ Séjour</button>`;
+}
+function vCal(){
+  const {y,m}=cal,first=new Date(y,m,1),off=(first.getDay()+6)%7,dim=new Date(y,m+1,0).getDate(),t=today();
+  const name=first.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+  let cells='';
+  ['L','M','M','J','V','S','D'].forEach(x=>cells+=`<div class="dow">${x}</div>`);
+  for(let i=0;i<off;i++)cells+=`<div class="d empty"></div>`;
+  const A=active();
+  for(let d=1;d<=dim;d++){
+    const ds=y+'-'+pad(m+1)+'-'+pad(d);
+    const cov=A.find(b=>b.start<=ds&&ds<b.end),dep=!cov&&A.find(b=>b.end===ds);
+    const cls=['d',ds===t?'today':'',cov?cov.status:'',dep?'dep':''].join(' ');
+    const lab=cov&&(cov.start===ds||d===1)?`<i>${esc(cov.name.split(' ')[0].slice(0,9))}</i>`:'';
+    cells+=`<div class="${cls}" data-act="day" data-d="${ds}">${d}${lab}</div>`;
+  }
+  const mm=y+'-'+pad(m+1),inM=A.filter(b=>b.start.slice(0,7)<=mm&&b.end.slice(0,7)>=mm&&!(b.end.slice(0,7)===mm&&b.end.slice(8)==='01')).sort((a,b)=>a.start.localeCompare(b.start));
+  return `<div class="calh"><button data-act="cm" data-d="-1">‹</button><b>${name}</b><button data-act="cm" data-d="1">›</button></div>
+  <div class="grid">${cells}</div>
+  <div class="legend"><span><em style="background:var(--pri)"></em>Confirmée</span><span><em style="background:var(--warn)"></em>Demandée</span><span><em style="background:#9aa39e"></em>Terminée</span></div>
+  <h2>Ce mois-ci</h2>`+(inM.length?inM.map(stayCard).join(''):`<div class="empty-note">Rien ce mois-ci.</div>`);
+}
+function vInsp(){
+  if(sub){
+    const b=bk(sub);if(!b){sub=null;return vInsp()}
+    const I=D.inspections[sub]||(D.inspections[sub]={rooms:ROOMS.map(n=>({id:uid(),name:n,note:'',before:[],after:[]}))});
+    let h=`<button class="back" data-act="insback">‹ Tous les séjours</button>
+    <div class="card"><b>${esc(b.name)}</b><div class="mute">${fd(b.start,1)} → ${fd(b.end,1)}</div></div>`;
+    I.rooms.forEach(r=>{
+      const col=side=>`<div><h4>${side==='before'?'Avant (arrivée)':'Après (départ)'}</h4><div class="th">${r[side].map(p=>`<img data-pid="${p}" data-act="photo" data-r="${r.id}" data-s="${side}" alt="">`).join('')}<label class="add">＋<input type="file" accept="image/*" multiple data-add="${side}" data-r="${r.id}"></label></div></div>`;
+      h+=`<div class="card room"><div class="rh"><b>${esc(r.name)}</b><button class="x" data-act="roomedit" data-r="${r.id}">⋯</button></div>
+      <div class="cols">${col('before')}${col('after')}</div>
+      <textarea data-note="${r.id}" placeholder="Remarque (état, dégât, manque…)">${esc(r.note)}</textarea>
+      <button class="btn sm" data-act="toitem" data-r="${r.id}">🧰 À acheter / changer</button></div>`;
+    });
+    return h+`<button class="btn" data-act="roomadd">＋ Ajouter une pièce</button>`;
+  }
+  const L=active().slice().sort((a,b)=>b.start.localeCompare(a.start));
+  return L.length?`<p class="mute">Choisis un séjour pour prendre les photos d'arrivée et de départ, pièce par pièce.</p>`+L.map(b=>`<div class="card tap" data-act="openinsp" data-id="${b.id}"><div class="between"><b>${esc(b.name)}</b><span class="mute">${fd(b.start,1)}</span></div>
+    <div class="mute">📷 Avant : ${photoCount(b.id,'before')} · Après : ${photoCount(b.id,'after')}</div></div>`).join(''):`<div class="empty-note">Ajoute d'abord un séjour.</div>`;
+}
+function vItems(){
+  let L=D.items.slice();
+  if(flt.items==='todo')L=L.filter(i=>!i.done);else if(flt.items==='done')L=L.filter(i=>i.done);
+  L.sort((a,b)=>URG.indexOf(a.urgency)-URG.indexOf(b.urgency));
+  const chips=[['todo','À faire'],['done','Fait'],['all','Tout']].map(([k,l])=>`<button class="${flt.items===k?'on':''}" data-act="fi" data-k="${k}">${l}</button>`).join('');
+  const tot=L.filter(i=>!i.done).reduce((s,i)=>s+(+i.price||0),0);
+  return `<div class="chips">${chips}</div>`+(flt.items!=='done'&&L.length?`<p class="mute">Total estimé : <b>${eur(tot)}</b></p>`:'')+
+  (L.length?L.map(i=>`<div class="card item ${i.done?'done':''}"><button class="ck" data-act="toggle" data-id="${i.id}">${i.done?'✓':''}</button>
+    <div style="flex:1;min-width:0" data-act="edititem" data-id="${i.id}"><div class="between"><span class="nm"><b>${esc(i.name)}</b></span><span>${i.price?eur(i.price):''}</span></div>
+    <div><span class="badge">${i.kind}</span> <span class="badge ${i.urgency}">${i.urgency}</span>${i.demo?' <span class="mute">exemple</span>':''}</div>
+    ${i.note?`<div class="mute">${esc(i.note)}</div>`:''}</div></div>`).join(''):`<div class="empty-note">Rien à prévoir ici.</div>`)+`<button class="fab" data-act="newitem">＋ Matériel</button>`;
+}
+function render(keep){
+  const y=window.scrollY;
+  const V={home:vHome,stays:vStays,cal:vCal,insp:vInsp,items:vItems};
+  $('#view').innerHTML=V[view]();
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));
+  $('#title').textContent=(view==='insp'&&sub&&bk(sub))?'État des lieux':TITLES[view];
+  hydratePhotos();
+  window.scrollTo(0,keep?y:0);
+}
+
+/* ---------- feuilles (formulaires) ---------- */
+function closeSheet(){document.querySelectorAll('.ov').forEach(o=>o.remove());document.body.classList.remove('lock')}
+function sheet(title,html,mount){
+  closeSheet();
+  const s=document.createElement('div');s.className='ov';
+  s.innerHTML=`<div class="sh"><div class="shh"><b>${esc(title)}</b><button class="x" data-act="close">✕</button></div><div class="shb">${html}</div></div>`;
+  s.addEventListener('click',e=>{if(e.target===s)closeSheet()});
+  document.body.appendChild(s);document.body.classList.add('lock');
+  if(mount)mount(s);hydratePhotos(s);
+}
+function editBooking(id,pre){
+  const b=id?bk(id):Object.assign({name:'',start:today(),end:addDays(today(),3),guests:2,price:'',deposit:'',source:'Booking',status:'Confirmée',phone:'',note:''},pre||{});
+  sheet(id?'Modifier le séjour':'Nouveau séjour',`<form id="f">
+  <label>Nom du voyageur<input name="name" required value="${esc(b.name)}"></label>
+  <div class="row"><label>Arrivée<input type="date" name="start" required value="${b.start}"></label><label>Départ<input type="date" name="end" required value="${b.end}"></label></div>
+  <p class="hint" id="nn"></p>
+  <div class="row"><label>Personnes<input type="number" inputmode="numeric" min="1" name="guests" value="${esc(b.guests)}"></label><label>Prix total (€)<input type="number" inputmode="decimal" step="0.01" name="price" value="${esc(b.price)}"></label></div>
+  <div class="row"><label>Acompte reçu (€)<input type="number" inputmode="decimal" step="0.01" name="deposit" value="${esc(b.deposit)}"></label><label>Provenance<select name="source">${opts(SOURCES,b.source)}</select></label></div>
+  <label>Statut<select name="status">${opts(STATUS,b.status)}</select></label>
+  <label>Téléphone<input type="tel" name="phone" value="${esc(b.phone)}"></label>
+  <label>Note<textarea name="note">${esc(b.note)}</textarea></label>
+  <button class="btn primary" type="submit">Enregistrer</button>
+  ${id?`<button type="button" class="btn" data-act="openinsp" data-id="${id}">📷 État des lieux</button><button type="button" class="btn danger" data-act="delb" data-id="${id}">Supprimer ce séjour</button>`:''}</form>`,s=>{
+    const f=s.querySelector('#f'),upd=()=>{const n=nights(f.start.value,f.end.value);s.querySelector('#nn').textContent=f.end.value>f.start.value?plural(n,'nuit','nuits')+(f.price.value?' · '+eur(f.price.value/n)+' / nuit':''):''};
+    f.addEventListener('input',upd);upd();
+    f.addEventListener('submit',e=>{
+      e.preventDefault();const v=Object.fromEntries(new FormData(f));
+      if(v.end<=v.start){alert("Le départ doit être après l'arrivée.");return}
+      if(v.status!=='Annulée'){
+        const c=D.bookings.find(x=>x.id!==id&&x.status!=='Annulée'&&x.start<v.end&&v.start<x.end);
+        if(c&&!confirm('Ces dates chevauchent le séjour de '+c.name+' ('+fd(c.start)+' → '+fd(c.end)+'). Enregistrer quand même ?'))return;
+      }
+      v.guests=+v.guests||1;
+      if(id)Object.assign(b,v);else D.bookings.push(Object.assign({id:uid()},v));
+      save();closeSheet();render(true);
+    });
+  });
+}
+function editItem(id,pre){
+  const i=id?D.items.find(x=>x.id===id):Object.assign({name:'',kind:'Acheter',urgency:'Normal',price:'',note:'',done:false},pre||{});
+  sheet(id?'Modifier':'Nouveau matériel',`<form id="f">
+  <label>Quoi ?<input name="name" required value="${esc(i.name)}" placeholder="ex. rideaux chambre"></label>
+  <div class="row"><label>Action<select name="kind">${opts(KINDS,i.kind)}</select></label><label>Urgence<select name="urgency">${opts(URG,i.urgency)}</select></label></div>
+  <label>Prix estimé (€)<input type="number" inputmode="decimal" step="0.01" name="price" value="${esc(i.price)}"></label>
+  <label>Note<textarea name="note">${esc(i.note)}</textarea></label>
+  <button class="btn primary" type="submit">Enregistrer</button>
+  ${id?`<button type="button" class="btn danger" data-act="delitem" data-id="${id}">Supprimer</button>`:''}</form>`,s=>{
+    s.querySelector('#f').addEventListener('submit',e=>{
+      e.preventDefault();const v=Object.fromEntries(new FormData(e.target));
+      if(id)Object.assign(i,v);else D.items.push(Object.assign({id:uid(),done:false},pre&&pre.from?{from:pre.from}:{},v));
+      save();closeSheet();render(true);
+    });
+  });
+}
+function roomOf(rid){const I=D.inspections[sub];return I&&I.rooms.find(r=>r.id===rid)}
+function settings(){
+  const hasDemo=D.bookings.some(b=>b.demo)||D.items.some(i=>i.demo);
+  sheet('Réglages',`<p class="mute">Les données restent sur ce téléphone. Fais une sauvegarde de temps en temps : tu peux l'enregistrer dans Drive, par mail ou dans Fichiers.</p>
+  <button class="btn primary" data-act="export">💾 Sauvegarder mes données</button>
+  <p class="mute">${D.lastExport?'Dernière sauvegarde : '+fd(D.lastExport,1):'Jamais sauvegardé.'}</p>
+  <label class="btn" style="text-align:center;margin-top:0">📥 Restaurer une sauvegarde<input type="file" accept=".json,application/json" data-import style="display:none"></label>
+  <h2>Exemples</h2>
+  <button class="btn" data-act="demo">${hasDemo?'Recharger les exemples':'Charger des exemples pour essayer'}</button>
+  ${hasDemo?'<button class="btn" data-act="undemo">Supprimer les exemples</button>':''}
+  <h2>Danger</h2><button class="btn danger" data-act="wipe">Tout effacer</button>`);
+}
+function loadDemo(){
+  undemo();const t=today(),mk=(o,s,e,n,g,p,src,st)=>({id:uid(),demo:true,name:n,start:addDays(t,s),end:addDays(t,e),guests:g,price:p,deposit:Math.round(p*.3),source:src,status:st,phone:'',note:''});
+  D.bookings.push(mk(0,-60,-54,'Famille Martin',4,720,'Booking','Terminée'),mk(0,-30,-25,'Julie et Antoine',2,540,'Booking','Terminée'),mk(0,-2,3,'M. Dubois',3,610,'Direct','Confirmée'),mk(0,12,19,'Famille Lopez',5,980,'Booking','Confirmée'),mk(0,34,38,'Sophie',2,400,'Booking','Demandée'));
+  D.items.push({id:uid(),demo:true,name:'Rideaux de la chambre',kind:'Changer',urgency:'Urgent',price:80,note:'Troués côté fenêtre',done:false},{id:uid(),demo:true,name:'Grille-pain',kind:'Acheter',urgency:'Normal',price:25,note:'',done:false},{id:uid(),demo:true,name:'Joint de la douche',kind:'Réparer',urgency:'Plus tard',price:10,note:'',done:false});
+  save();
+}
+function undemo(){
+  D.bookings.filter(b=>b.demo).forEach(b=>delete D.inspections[b.id]);
+  D.bookings=D.bookings.filter(b=>!b.demo);D.items=D.items.filter(i=>!i.demo);save();
+}
+async function exportData(){
+  const photos={};for(const k of await pKeys())photos[k]=await pGet(k);
+  const blob=new Blob([JSON.stringify({v:1,data:D,photos})],{type:'application/json'});
+  const name='loc-ramplan-'+today()+'.json',file=new File([blob],name,{type:'application/json'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],title:name})}catch(e){if(e&&e.name==='AbortError')return}
+  }else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove()}
+  D.lastExport=today();save();settings();
+}
+async function importData(file){
+  try{
+    const j=JSON.parse(await file.text());if(!j.data||!j.data.bookings)throw 0;
+    if(!confirm('Remplacer toutes les données actuelles par cette sauvegarde ?'))return;
+    await pClear();for(const k in (j.photos||{}))await pPut(k,j.photos[k]);
+    D=Object.assign(fresh(),j.data);save();closeSheet();render();alert('Sauvegarde restaurée.');
+  }catch(e){alert("Ce fichier n'est pas une sauvegarde valide.")}
+}
+
+/* ---------- évènements ---------- */
+document.addEventListener('click',async e=>{
+  const nv=e.target.closest('nav button');
+  if(nv){view=nv.dataset.v;sub=null;render();return}
+  const a=e.target.closest('[data-act]');if(!a)return;
+  const id=a.dataset.id,act=a.dataset.act;
+  switch(act){
+    case 'close':closeSheet();break;
+    case 'settings':settings();break;
+    case 'goto':view=a.dataset.v;sub=null;render();break;
+    case 'newb':editBooking();break;
+    case 'editb':editBooking(id);break;
+    case 'delb':if(confirm('Supprimer ce séjour et ses photos ?')){const I=D.inspections[id];if(I)for(const r of I.rooms)for(const p of r.before.concat(r.after))await pDel(p);delete D.inspections[id];D.bookings=D.bookings.filter(b=>b.id!==id);save();closeSheet();render(true)}break;
+    case 'fs':flt.stays=a.dataset.k;render();break;
+    case 'fi':flt.items=a.dataset.k;render();break;
+    case 'by':bilanY+=+a.dataset.d;render(true);break;
+    case 'cm':cal.m+=+a.dataset.d;if(cal.m<0){cal.m=11;cal.y--}if(cal.m>11){cal.m=0;cal.y++}render();break;
+    case 'day':{
+      const ds=a.dataset.d,L=active().filter(b=>(b.start<=ds&&ds<b.end)||b.end===ds||b.start===ds);
+      if(!L.length){editBooking(null,{start:ds,end:addDays(ds,3)});break}
+      sheet(fd(ds,1),L.map(b=>`<div class="card tap" data-act="editb" data-id="${b.id}"><b>${esc(b.name)}</b><div class="mute">${fd(b.start)} → ${fd(b.end)} · ${b.start===ds?'arrivée':b.end===ds?'départ':'sur place'}</div></div>`).join('')+`<button class="btn primary" data-act="newbat" data-d="${ds}">＋ Nouveau séjour à partir d'ici</button>`);
+      break}
+    case 'newbat':editBooking(null,{start:a.dataset.d,end:addDays(a.dataset.d,3)});break;
+    case 'openinsp':closeSheet();view='insp';sub=id;render();break;
+    case 'insback':sub=null;render();break;
+    case 'roomadd':{const n=prompt('Nom de la pièce ?');if(n&&n.trim()){D.inspections[sub].rooms.push({id:uid(),name:n.trim(),note:'',before:[],after:[]});save();render(true)}break}
+    case 'roomedit':{
+      const r=roomOf(a.dataset.r);if(!r)break;
+      sheet(r.name,`<button class="btn" data-act="roomren" data-r="${r.id}">✏️ Renommer</button><button class="btn danger" data-act="roomdel" data-r="${r.id}">Supprimer cette pièce</button>`);break}
+    case 'roomren':{const r=roomOf(a.dataset.r),n=prompt('Nouveau nom ?',r.name);if(n&&n.trim()){r.name=n.trim();save();closeSheet();render(true)}break}
+    case 'roomdel':{const r=roomOf(a.dataset.r);if(confirm('Supprimer « '+r.name+' » et ses photos ?')){for(const p of r.before.concat(r.after))await pDel(p);const I=D.inspections[sub];I.rooms=I.rooms.filter(x=>x!==r);save();closeSheet();render(true)}break}
+    case 'toitem':{const r=roomOf(a.dataset.r),b=bk(sub);editItem(null,{note:'Pièce : '+r.name+(r.note?' — '+r.note:'')+' ('+b.name+')',from:sub});break}
+    case 'photo':{
+      const v=document.createElement('div');v.className='view';
+      v.innerHTML=`<img data-pid="${a.dataset.pid||a.getAttribute('data-pid')}" alt=""><div class="bar"><button data-act="vdel" data-pid="${a.getAttribute('data-pid')}" data-r="${a.dataset.r}" data-s="${a.dataset.s}" style="background:#b4443a;color:#fff">Supprimer</button><button data-act="vclose">Fermer</button></div>`;
+      document.body.appendChild(v);hydratePhotos(v);break}
+    case 'vclose':document.querySelector('.view').remove();break;
+    case 'vdel':{
+      if(!confirm('Supprimer cette photo ?'))break;
+      const r=roomOf(a.dataset.r),p=a.dataset.pid;r[a.dataset.s]=r[a.dataset.s].filter(x=>x!==p);await pDel(p);save();document.querySelector('.view').remove();render(true);break}
+    case 'newitem':editItem();break;
+    case 'edititem':editItem(id);break;
+    case 'toggle':{const i=D.items.find(x=>x.id===id);i.done=!i.done;save();render(true);break}
+    case 'delitem':if(confirm('Supprimer ?')){D.items=D.items.filter(i=>i.id!==id);save();closeSheet();render(true)}break;
+    case 'export':exportData();break;
+    case 'demo':loadDemo();closeSheet();render();break;
+    case 'undemo':undemo();closeSheet();render();break;
+    case 'wipe':if(confirm('Tout effacer, séjours et photos compris ?')&&confirm('Vraiment ? Cette action est définitive.')){await pClear();D=fresh();save();closeSheet();render()}break;
+  }
+});
+document.addEventListener('change',async e=>{
+  const t=e.target;
+  if(t.dataset.add){
+    const r=roomOf(t.dataset.r);if(!r)return;
+    for(const f of t.files){try{const data=await compress(f),pid=uid();await pPut(pid,data);r[t.dataset.add].push(pid)}catch(err){alert("Photo non lisible.")}}
+    save();render(true);
+  }else if(t.dataset.note){const r=roomOf(t.dataset.note);if(r){r.note=t.value;save()}}
+  else if('import' in t.dataset&&t.files[0])importData(t.files[0]);
+});
+
+/* ---------- démarrage ---------- */
+openDB().catch(()=>{}).then(()=>{render();if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()});
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>

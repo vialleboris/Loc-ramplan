@@ -1,0 +1,14 @@
+{
+  "name": "Loc. Ramplan – La vieille écurie",
+  "short_name": "Loc. Ramplan",
+  "description": "Gestion de la location de l'appartement La vieille écurie",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f3ee",
+  "theme_color": "#2f5d50",
+  "lang": "fr",
+  "icons": [
+    {"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+  ]
+}
